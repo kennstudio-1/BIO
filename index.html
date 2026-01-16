@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>rvsh | cyber bio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+
+:root{
+--main:#ff0033;
+--glow:0 0 20px #ff0033,0 0 40px #ff003355;
+}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'JetBrains Mono',monospace;
+-webkit-tap-highlight-color:transparent;
+}
+
+body{
+height:100vh;
+background:#000;
+color:var(--main);
+overflow:hidden;
+}
+
+
+
+#boot{
+position:fixed;
+inset:0;
+background:#000;
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:99999;
+}
+
+#bootText{
+font-size:13px;
+white-space:pre;
+line-height:1.6;
+text-shadow:0 0 8px #ff0033;
+}
+
+
+
+canvas{
+position:fixed;
+inset:0;
+z-index:-1;
+}
+
+
+
+.wrapper{
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:15px;
+perspective:1000px;
+}
+
+.card{
+width:100%;
+max-width:360px;
+background:rgba(0,0,0,.85);
+border:1px solid var(--main);
+border-radius:18px;
+padding:25px;
+box-shadow:var(--glow);
+backdrop-filter:blur(6px);
+position:relative;
+transform-style:preserve-3d;
+animation:fade 1s forwards;
+}
+
+@keyframes fade{
+from{opacity:0;transform:scale(.9)}
+to{opacity:1}
+}
+
+.name{
+font-size:22px;
+font-weight:700;
+}
+
+.cursor{
+display:inline-block;
+width:8px;
+height:18px;
+background:var(--main);
+margin-left:5px;
+animation:blink 1s infinite;
+}
+
+@keyframes blink{50%{opacity:0}}
+
+.tag{
+margin-top:8px;
+font-size:13px;
+opacity:.7;
+min-height:18px;
+}
+
+.links{
+margin-top:20px;
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+
+.links a{
+text-decoration:none;
+color:var(--main);
+border:1px solid var(--main);
+padding:12px;
+border-radius:10px;
+text-align:center;
+}
+
+.links a:active{
+background:#ff003322;
+box-shadow:var(--glow);
+}
+
+
+
+.eye{
+position:absolute;
+top:-25px;
+right:-25px;
+width:60px;
+height:60px;
+background:#fff;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+box-shadow:var(--glow);
+cursor:pointer;
+}
+
+.iris{
+width:30px;
+height:30px;
+background:var(--main);
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.pupil{
+width:12px;
+height:12px;
+background:#000;
+border-radius:50%;
+}
+
+
+
+.alert{
+position:fixed;
+top:12px;
+left:12px;
+font-size:11px;
+background:#000;
+border:1px solid var(--main);
+padding:8px 12px;
+border-radius:8px;
+box-shadow:var(--glow);
+animation:pulse 1.5s infinite alternate;
+z-index:20;
+}
+
+@keyframes pulse{from{opacity:.6}to{opacity:1}}
+
+
+
+#eyeOverlay{
+position:fixed;
+inset:0;
+background:#000;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+opacity:0;
+pointer-events:none;
+transition:.3s;
+z-index:9999;
+}
+
+#eyeOverlay.active{
+opacity:1;
+pointer-events:auto;
+}
+
+.bigEye{
+width:230px;
+height:230px;
+background:#fff;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+box-shadow:0 0 80px #ff0033;
+animation:pulseEye 1.4s infinite alternate;
+}
+
+@keyframes pulseEye{
+from{transform:scale(1)}
+to{transform:scale(1.05)}
+}
+
+.bigIris{
+width:110px;
+height:110px;
+background:var(--main);
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.bigPupil{
+width:45px;
+height:45px;
+background:#000;
+border-radius:50%;
+}
+
+.watchText{
+margin-top:30px;
+font-size:20px;
+letter-spacing:2px;
+text-shadow:0 0 15px #ff0033;
+min-height:28px;
+}
+
+
+
+@media(max-width:500px){
+.bigEye{width:170px;height:170px}
+.bigIris{width:80px;height:80px}
+.bigPupil{width:30px;height:30px}
+.watchText{font-size:16px}
+}
+
+</style>
+</head>
+
+<body>
+
+
+
+<div id="boot">
+<div id="bootText"></div>
+</div>
+
+
+
+<div id="eyeOverlay">
+  <div class="bigEye">
+    <div class="bigIris">
+      <div class="bigPupil" id="bigPupil"></div>
+    </div>
+  </div>
+  <div class="watchText" id="watchText"></div>
+</div>
+
+<div class="alert" id="alert">⚠ DEVICE MONITORING ACTIVE</div>
+
+<canvas id="matrix"></canvas>
+
+<div class="wrapper">
+<div class="card" id="card">
+
+<div class="eye" id="eyeBtn">
+<div class="iris">
+<div class="pupil" id="pupil"></div>
+</div>
+</div>
+
+<div class="name">rvsh<span class="cursor"></span></div>
+<div class="tag" id="tag"></div>
+
+<div class="links">
+<a href="https://github.com/kennstudio-1">GitHub</a>
+<a href="https://discord.com/users/693367635567444021
+">Discord</a>
+<a href="https://discord.gg/RzaCDv6uEr">Discord Channel</a>
+<a href="https://t.me/kennchik1">Telegram</a>
+</div>
+
+</div>
+</div>
+
+<script>
+
+
+
+const bootLines=[
+"Initializing cyber core...",
+"Scanning device...",
+"Checking permissions...",
+"Loading neural interface...",
+"Decrypting UI modules...",
+"Connection secured.",
+"Access granted.\n"
+];
+
+const bootText=document.getElementById("bootText");
+let bl=0,bc=0;
+
+function bootAnim(){
+if(bl<bootLines.length){
+if(bc<bootLines[bl].length){
+bootText.textContent+=bootLines[bl][bc];
+bc++;
+setTimeout(bootAnim,35);
+}else{
+bootText.textContent+="\n";
+bl++;
+bc=0;
+setTimeout(bootAnim,200);
+}
+}else{
+setTimeout(()=>{
+document.getElementById("boot").style.opacity=0;
+setTimeout(()=>document.getElementById("boot").remove(),500);
+},700);
+}
+}
+
+bootAnim();
+
+
+const canvas=document.getElementById("matrix");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+canvas.width=innerWidth;
+canvas.height=innerHeight;
+}
+resize();
+addEventListener("resize",resize);
+
+const letters="01RVSHCYBER";
+const size=14;
+let cols=Math.floor(canvas.width/size);
+let drops=Array(cols).fill(1);
+
+function matrix(){
+ctx.fillStyle="rgba(0,0,0,.15)";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#ff0033";
+ctx.font=size+"px monospace";
+
+drops.forEach((y,i)=>{
+let char=letters[Math.floor(Math.random()*letters.length)];
+ctx.fillText(char,i*size,y*size);
+if(y*size>canvas.height&&Math.random()>.98)drops[i]=0;
+drops[i]++;
+});
+requestAnimationFrame(matrix);
+}
+matrix();
+
+/* ===== TAG TYPE ===== */
+
+const tags=["dark cyber interface","mobile hacker ui","rvsh.exe online"];
+let t=0,i=0,del=false;
+const tag=document.getElementById("tag");
+
+function loop(){
+let text=tags[t];
+if(!del){
+tag.textContent=text.slice(0,i++);
+if(i>text.length+10)del=true;
+}else{
+tag.textContent=text.slice(0,i--);
+if(i<0){del=false;t=(t+1)%tags.length}
+}
+setTimeout(loop,80);
+}
+loop();
+
+
+
+const card=document.getElementById("card");
+
+document.addEventListener("mousemove",e=>{
+const x=e.clientX/window.innerWidth-.5;
+const y=e.clientY/window.innerHeight-.5;
+card.style.transform=`rotateY(${x*20}deg) rotateX(${-y*20}deg)`;
+});
+
+
+
+const pupil=document.getElementById("pupil");
+
+document.addEventListener("mousemove",e=>{
+const r=pupil.parentElement.getBoundingClientRect();
+const x=e.clientX-r.left-r.width/2;
+const y=e.clientY-r.top-r.height/2;
+pupil.style.transform=`translate(${x/12}px,${y/12}px)`;
+});
+
+
+
+const eyeBtn=document.getElementById("eyeBtn");
+const overlay=document.getElementById("eyeOverlay");
+const watch=document.getElementById("watchText");
+const bigPupil=document.getElementById("bigPupil");
+
+let msg="I AM WATCHING YOU";
+let ind=0;
+
+function typeEye(){
+if(ind<msg.length){
+watch.textContent+=msg[ind++];
+setTimeout(typeEye,80);
+}
+}
+
+eyeBtn.onclick=()=>{
+overlay.classList.add("active");
+watch.textContent="";
+ind=0;
+typeEye();
+if(navigator.vibrate) navigator.vibrate([60,40,60]);
+};
+
+overlay.onclick=()=>{
+overlay.classList.remove("active");
+};
+
+overlay.addEventListener("mousemove",e=>{
+const x=e.clientX-innerWidth/2;
+const y=e.clientY-innerHeight/2;
+bigPupil.style.transform=`translate(${x/30}px,${y/30}px)`;
+});
+
+
+
+const alerts=[
+"REMOTE ACCESS DETECTED",
+"CAMERA STREAM ACTIVE",
+"GPS SIGNAL LOCKED",
+"DATA CHANNEL OPEN"
+];
+
+const alertBox=document.getElementById("alert");
+
+setInterval(()=>{
+alertBox.textContent="⚠ "+alerts[Math.floor(Math.random()*alerts.length)];
+},3500);
+
+</script>
+
+</body>
+</html>
